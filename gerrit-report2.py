@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
 
-####!/usr/bin/env python3
-
 import argparse
 import subprocess
 import json
@@ -44,7 +42,7 @@ def query(*args):
 
 
 def changes():
-    args = "age:{0}".format(option_age)
+    args = ""
     if option_owner:
         args += " ( {0} )".format(option_owner)
     return query(args,
@@ -151,7 +149,14 @@ def map_reviewers(reviewers, owner):
 
 def reason(change):
     subject = change['subject']
-    owner = (change['owner']['username'], change['owner']['name'])
+
+    if 'name' not in change['owner']:
+        owner_name = change['owner']['username']
+    else:
+        owner_name =  change['owner']['name']
+
+
+    owner = (change['owner']['username'], owner_name)
     if 'allReviewers' in change:
         reviewers = map_reviewers(change['allReviewers'], owner)
     else:
@@ -254,8 +259,6 @@ def do_report(args):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--age', help='Change age since last modified', type=str,
-                    default="1d")
 parser.add_argument('--owner', help='Change owner', type=str,
                     action='append')
 parser.add_argument('--protocol', help='Protocol for username conversion',
@@ -268,8 +271,6 @@ report.set_defaults(func=do_report)
 
 args = parser.parse_args()
 
-if 'age' in args:
-    option_age = args.age
 if ('owner' in args) and args.owner:
     option_owner = " OR ".join(map(lambda x: "owner:" + x,
                                    args.owner))
