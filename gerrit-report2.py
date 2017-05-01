@@ -6,14 +6,17 @@ import subprocess
 import json
 import re
 import config
+import collections
 
 from slacker import Slacker
 slack = Slacker(config.token)
+
 
 option_age = ""
 option_owner = None
 option_protocol = 'slack'
 option_ssm = None
+option_stat = None
 
 query_cache = {}
 HOST="openbmc.gerrit"
@@ -209,29 +212,30 @@ def reason(change):
     else:
         return ("Awaiting merge review.", [], None)
 
-send_to_slack = ['@andrewg', 
-                '@bradleyb',
-                '@cbostic', 
-                '@spinler', 
-                '@vishwanath', 
+send_to_slack = ['@andrewg',
                 '@anoo', 
-                '@dhruvaraj', 
-                '@lgonzalez', 
-                '@gmills', 
-                '@devenrao', 
-                '@dkodihal', 
+                '@bradleyb',
+                '@cbostic',
                 '@chinari', 
-                '@tomjoseph', 
-                '@jdking', 
+                '@devenrao', 
+                '@dkodihal',              
+                '@dhruvaraj', 
                 '@eajames', 
-                '@v2cib530', 
-                '@ratagupt',  
-                '@khansa', 
-                '@ojayanth', 
-                '@msbarth']
+                '@gmills', 
+                '@jdking', 
+                '@khansa',               
+                '@lgonzalez',  
+                '@msbarth',
+                '@ojayanth',
+                '@ratagupt',
+                '@spinler',
+                '@tomjoseph',
+                '@vishwanath',
+                '@v2cib530']
 
 def do_report(args):
     action_list = {}
+    stat_list = {}
     for c in changes():
         print("{0} - {1}".format(c['url'], c['id']))
         print(c['subject'].encode('utf-8'))
@@ -250,20 +254,51 @@ def do_report(args):
     for slack_name, action_description in action_list.iteritems():
         print "~~~~"
         print slack_name
+        print "Number of Actions: %d" % len(action_description)
 
+        review_count = 0
         for description in action_description:
+            if "Missing code review" in description:
+                review_count += 1
+
             if option_ssm and slack_name in send_to_slack:
                 print description
                 slack.chat.post_message(slack_name, description)
+        print "Number of Reviews: %d" % review_count
+        stat_list.setdefault(slack_name, []).append(review_count)
+
+    message = ""
+    for check_name in username_map['slack']:
+        slack_name = username_map['slack'][check_name]
+        if slack_name == 'Jenkins':
+            continue
+        if slack_name not in stat_list:
+            message = message + "%s has [0] reviews\n" % (slack_name)
 
 
+    sorted_stat_list =  sorted(stat_list.items(), key=lambda x: (x[1],x[0]))
+
+    sorted_stat_list.remove(('', [0]))
+    for s_name, cnt in sorted_stat_list:
+        if s_name in username_map['slack'].values():
+            message = message + "%s has %s reviews\n" % (s_name, cnt)
+
+    print message
+    if option_stat:
+        print "sending stats to openbmcdev channel"
+        slack.chat.post_message('#openbmcdev',message)
+    
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--owner', help='Change owner', type=str,
                     action='append')
 parser.add_argument('--protocol', help='Protocol for username conversion',
                     type=str, choices=(username_map.keys()))
-parser.add_argument('--sm', action='store_true',help='send slack message flag')
+parser.add_argument('-sm', action='store_true',help='send slack message flag')
+parser.add_argument('-stat', action='store_true',help='send statistics to slack flag')
+
+
+
 subparsers = parser.add_subparsers()
 
 report = subparsers.add_parser('report', help='Generate report')
@@ -281,6 +316,10 @@ if args.sm:
     print("will send messages to slack")
 else:
     print("no slack messges will be sent")
+
+if args.stat:
+    option_stat = 'True'
+
 
 if 'func' in args:
     args.func(args)
