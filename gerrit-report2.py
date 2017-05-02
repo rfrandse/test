@@ -248,7 +248,11 @@ def do_report(args):
     for slack_name, action_description in action_list.iteritems():
         print "~~~~"
         print slack_name
-        print "Number of Actions: %d" % len(action_description)
+        total_actions_message = "Number of Actions: %d" % len(action_description)
+        print total_actions_message
+        
+        if option_ssm and slack_name in send_to_slack:
+            slack.chat.post_message(slack_name, total_actions_message)
 
         review_count = 0
         for description in action_description:
