@@ -108,7 +108,7 @@ def map_approvals(approvals, owner):
     mapped = {}
     for a in approvals:
         approval_type = a['type']
-        approval_owner = (a['by']['username'], a['by']['name'])
+        approval_owner = (a['by']['username'], a['by'].get('name'))
         approval_score = int(a['value'])
 
         if approval_type not in mapped:
@@ -153,13 +153,7 @@ def map_reviewers(reviewers, owner):
 def reason(change):
     subject = change['subject']
 
-    if 'name' not in change['owner']:
-        owner_name = change['owner']['username']
-    else:
-        owner_name =  change['owner']['name']
-
-
-    owner = (change['owner']['username'], owner_name)
+    owner = (change['owner']['username'], change['owner'].get('name'))
     if 'allReviewers' in change:
         reviewers = map_reviewers(change['allReviewers'], owner)
     else:
