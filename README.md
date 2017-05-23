@@ -13,32 +13,18 @@ Additionally reports are sent via slack to openbmc team members
 2. An ssh alias to Gerrit `openbmc.gerrit`
 3. https://github.com/os/slacker module installed. 
 4. config.py file with 
-    #!/usr/bin/python
+```    
+#!/usr/bin/python
     token = "<insert slack token here>"
-
+```
 # Usages
 
 ## Default use
 
-Generate a report for all commits untouched in the last day:
-
 ```
-gerrit-report.py --protocol slack report
-gerrit-report.py --protocol irc report
+gerrit-report2.py -sm -stat report
+
+-sm    send slack message
+-stat  sent statistics to slack
 ```
-
-## Individual developer
-
-List the current status on all your own commits.
-
-```gerrit-report.py --age=0d --owner=<github_id> report```
-
-## Team lead
-
-List the current status of your teams commits.
-
-```gerrit-report.py --age=0d --owner=<github0> --owner=<github1> ... report```
-
-This has the effect of a Gerrit query such as
-`(owner:github0 OR owner:github1)`.
 

@@ -7,6 +7,9 @@ import json
 import re
 import config
 import collections
+from datetime import datetime, timedelta
+import time
+from pprint import pprint
 
 from slacker import Slacker
 slack = Slacker(config.token)
@@ -68,7 +71,6 @@ username_map = {
         'williamspatrick': "stwcx",
     },
     'slack': {
-        'adamliyi': "@shyili",
         'amboar': "@arj",
         'anoo1': "@anoo",
         'bradbishop': "@bradleyb",
@@ -230,24 +232,42 @@ send_to_slack = ['@andrewg',
 def do_report(args):
     action_list = {}
     stat_list = {}
+    oldest_action = {}
+    oldest_review = {}
     for c in changes():
+        patchCreatedOn = c['currentPatchSet']['createdOn']
+        structTime = time.gmtime(patchCreatedOn)
+        timePatchCreatedOn = datetime(*structTime[:6])
+        timePatchCreatedOn -= timedelta(hours=5)
+        dCTM = datetime.now() -  timePatchCreatedOn
+
         print("{0} - {1}".format(c['url'], c['id']))
         print(c['subject'].encode('utf-8'))
         (r, people, dep) = reason(c)
         people = ", ".join(map(map_username, people))
         print(r.format(people, dep))
+        print("patch age:%s") % dCTM
         print("----")
 
         plist =  people.split(",")
         for p in plist:
             p = p.strip()
             message = "{0} - {1}".format(c['url'], c['id'].encode('utf-8')) 
-            message = message + "\n" + c['subject'].encode('utf-8') + "\n" + r.format(people, dep) + "\n----"
+            message = message + "\n" + c['subject'].encode('utf-8') + "\n" + r.format(people, dep) 
+            message += "\npatch age:" + str(dCTM) + "\n----"
             action_list.setdefault(p, []).append(message)
+
+            if "Missing code review" in message:
+                if p not in oldest_action:
+                    oldest_action.setdefault(p, []).append(patchCreatedOn)
+                    oldest_action[p]= patchCreatedOn
+                elif oldest_action[p] > patchCreatedOn:
+                    oldest_action[p] = patchCreatedOn
 
     for slack_name, action_description in action_list.iteritems():
         print "~~~~"
         print slack_name
+
         total_actions_message = "Number of Actions: %d" % len(action_description)
         print total_actions_message
         
@@ -256,6 +276,8 @@ def do_report(args):
 
         review_count = 0
         for description in action_description:
+            if slack_name in send_to_slack:
+                print description
             if "Missing code review" in description:
                 review_count += 1
 
@@ -263,7 +285,16 @@ def do_report(args):
                 print description
                 slack.chat.post_message(slack_name, description)
         print "Number of Reviews: %d" % review_count
+
+        if slack_name in oldest_action:
+            structTime = time.gmtime(oldest_action[slack_name])
+            timePatchCreatedOn = datetime(*structTime[:6])
+            timePatchCreatedOn -= timedelta(hours=5)
+
+            dCTM = datetime.now() -  timePatchCreatedOn
+            print "Oldest Action: %s" % dCTM
         stat_list.setdefault(slack_name, []).append(review_count)
+        
 
     message = ""
     for check_name in username_map['slack']:
@@ -271,7 +302,7 @@ def do_report(args):
         if slack_name == 'Jenkins':
             continue
         if slack_name not in stat_list:
-            message = message + "%s has [0] reviews\n" % (slack_name)
+            message = message + "%s has [0] reviews, oldest patch age:\n" % (slack_name)
 
 
     sorted_stat_list =  sorted(stat_list.items(), key=lambda x: (x[1],x[0]))
@@ -279,7 +310,14 @@ def do_report(args):
     sorted_stat_list.remove(('', [0]))
     for s_name, cnt in sorted_stat_list:
         if s_name in username_map['slack'].values():
-            message = message + "%s has %s reviews\n" % (s_name, cnt)
+            dCTM = ""
+            if s_name in oldest_action:
+                structTime = time.gmtime(oldest_action[s_name])
+                timePatchCreatedOn = datetime(*structTime[:6])
+                timePatchCreatedOn -= timedelta(hours=5)
+                dCTM = datetime.now() -  timePatchCreatedOn
+            message = message + "%s has %s reviews, oldest patch age: %s\n" % (s_name, cnt, dCTM)
+
 
     print message
     if option_stat:
