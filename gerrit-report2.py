@@ -209,7 +209,8 @@ def reason(change):
         return ("Awaiting merge review.", [], None)
 
 send_to_slack = ['@andrewg',
-                '@anoo', 
+                '@anoo',
+                '@arj',
                 '@bradleyb',
                 '@cbostic',
                 '@chinari', 
@@ -218,7 +219,8 @@ send_to_slack = ['@andrewg',
                 '@dhruvaraj', 
                 '@eajames', 
                 '@gmills', 
-                '@jdking', 
+                '@jdking',
+                '@jms',
                 '@khansa',               
                 '@lgonzalez',  
                 '@msbarth',
@@ -282,7 +284,7 @@ def do_report(args):
                 review_count += 1
 
             if option_ssm and slack_name in send_to_slack:
-                print description
+#                print description
                 slack.chat.post_message(slack_name, description)
         print "Number of Reviews: %d" % review_count
 
