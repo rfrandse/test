@@ -155,8 +155,12 @@ def map_reviewers(reviewers, owner):
 
 def reason(change):
     subject = change['subject']
+    if change['owner'].get('name'): 
+        real_name = change['owner'].get('name')
+    else:
+        real_name = change['owner']['username']
+    owner = (change['owner']['username'], real_name)
 
-    owner = (change['owner']['username'], change['owner'].get('name'))
     if 'allReviewers' in change:
         reviewers = map_reviewers(change['allReviewers'], owner)
     else:
