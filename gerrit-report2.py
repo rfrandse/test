@@ -255,6 +255,8 @@ def do_report(args):
         print(r.format(people, dep))
         print("patch age:%s") % dCTM
         print("----")
+        if "Depends on unmerged patch set" in r.format(people, dep):
+            continue
 
         plist =  people.split(",")
         for p in plist:
