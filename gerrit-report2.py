@@ -39,6 +39,8 @@ def query(*args):
 
 
     results = list(map(json.loads, s.stdout.read().splitlines()))
+#    print json.dumps(results,indent=4)
+
     del results[-1]
 
     for r in results:
@@ -85,11 +87,12 @@ username_map = {
         'eddiejames': "@eajames",
         'gtmills': "@gmills",
         'jenkins-openbmc': "Jenkins",
-        'JoshDKing': "@jdking",
+        'jk-ozlabs' : "@jk",
         'lgon':"@lgonzalez",
         'mine260309': "@shyulei",
         'msbarth': "@msbarth",
         'mtritz': "@mtritz",
+        'ngorugan': "@ngorugan",
         'ojayanth': "@ojayanth",
         'ratagupt': "@ratagupt",
         'saqibkh': "@khansa",
@@ -97,10 +100,22 @@ username_map = {
         'spinler': "@spinler",
         'tomjoseph83': "@tomjoseph",
         'vishwabmc': "@vishwanath",
-        'williamspatrick': "@iawillia",
     },
 }
 
+project_map = {
+    'openbmc/witherspoon-pfault-analysis': ('spinler','Matt Spinler'),
+    'openbmc/phosphor-mrw-tools':('spinler','Matt Spinler'),
+    'openbmc/mboxbridge': ('amboar','Andrew Jeffery'),
+    'openbmc/obmc-console': ('jk-ozlabs','Jeremy Kerr'),
+    'openbmc/btbridge': ('jk-ozlabs','Jeremy Kerr'),
+    'openbmc/inarp': ('jk-ozlabs','Jeremy Kerr'),
+    'openbmc/phosphor-settingsd' :('dkodihal','Deepak Kodihalli'),
+    'openbmc/phosphor-logging' :('dkodihal','Deepak Kodihalli'),
+    'openbmc/openpower-vpd-parser': ('dkodihal','Deepak Kodihalli'),
+    'openbmc/phosphor-mboxd': ('amboar','Andrew Jeffery'),
+    'openbmc/openbmc': ('bradbishop','Brad Bishop')
+}
 
 def map_username(user):
     return username_map[option_protocol].get(
@@ -152,8 +167,15 @@ def map_reviewers(reviewers, owner):
 
     return mapped
 
+def map_project_reviewer(project_name):
+    
+    if project_map.get(project_name) is None:
+        return ('bradbishop','Brad Bishop')
+    return project_map.get(project_name)
+
 
 def reason(change):
+
     subject = change['subject']
     if change['owner'].get('name'): 
         real_name = change['owner'].get('name')
@@ -208,17 +230,18 @@ def reason(change):
                         [owner], dep['id'])
 
     approved_by = list(filter(lambda x: reviewed[x] == 2, reviewed))
+    
+    project_reviewer =  map_project_reviewer(change['project'])
     if len(approved_by):
         return ("Ready for merge by {0}.", approved_by, None)
     else:
-        return ("Awaiting merge review.", [], None)
+        return ("Awaiting merge review by {0}", [project_reviewer] , None)
 
 send_to_slack = ['@andrewg',
                 '@anoo',
                 '@arj',
                 '@bradleyb',
                 '@cbostic',
-                '@charles.hofer',
                 '@chinari', 
                 '@devenrao', 
                 '@dkodihal',              
@@ -226,9 +249,12 @@ send_to_slack = ['@andrewg',
                 '@eajames', 
                 '@gmills', 
                 '@jms',
+                '@jk',
                 '@khansa',               
                 '@lgonzalez',  
                 '@msbarth',
+                '@mtritz',
+                '@ngorugan',
                 '@ojayanth',
                 '@ratagupt',
                 '@spinler',
@@ -316,7 +342,7 @@ def do_report(args):
 
     sorted_stat_list =  sorted(stat_list.items(), key=lambda x: (x[1],x[0]))
 
-    sorted_stat_list.remove(('', [0]))
+#    sorted_stat_list.remove(('', [0]))
     for s_name, cnt in sorted_stat_list:
         if s_name in username_map['slack'].values():
             dCTM = ""
