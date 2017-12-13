@@ -290,7 +290,13 @@ def do_report(args):
             message = "{0} - {1}".format(c['url'], c['id'].encode('utf-8')) 
             message = message + "\n" + c['subject'].encode('utf-8') + "\n" + r.format(people, dep) 
             message += "\npatch age:" + str(dCTM) + "\n----"
-            action_list.setdefault(p, []).append(message)
+
+            pattern = re.compile('bump version')   
+            match_all = pattern.findall(c['subject'])
+            if match_all:
+                continue
+
+            action_list.setdefault(p, []).append(message)            
 
             if "Missing code review" in message:
                 if p not in oldest_action:
