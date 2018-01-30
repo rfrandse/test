@@ -78,8 +78,6 @@ username_map = {
         'bradbishop': "@bradleyb",
         'bjwyman': "@v2cib530",
         'cbostic': "@cbostic",
-        'chinaridinesh': "@chinari",
-        'charleshofer': "@charles.hofer",
         'dhruvibm': "@dhruvaraj",
         'dkodihal': "@dkodihal",
         'devenrao': "@devenrao",
@@ -88,18 +86,16 @@ username_map = {
         'gtmills': "@gmills",
         'jenkins-openbmc': "Jenkins",
         'jk-ozlabs' : "@jk",
-        'lgon':"@lgonzalez",
         'mine260309': "@shyulei",
         'msbarth': "@msbarth",
         'mtritz': "@mtritz",
         'ngorugan': "@ngorugan",
+        'navrathi' : "@navrathi",
         'ojayanth': "@ojayanth",
         'ratagupt': "@ratagupt",
-        'saqibkh': "@khansa",
         'shenki': "@jms",
         'spinler': "@spinler",
         'tomjoseph83': "@tomjoseph",
-        'vishwabmc': "@vishwanath",
     },
 }
 
@@ -114,7 +110,8 @@ project_map = {
     'openbmc/phosphor-logging' :('dkodihal','Deepak Kodihalli'),
     'openbmc/openpower-vpd-parser': ('dkodihal','Deepak Kodihalli'),
     'openbmc/phosphor-mboxd': ('amboar','Andrew Jeffery'),
-    'openbmc/openbmc': ('bradbishop','Brad Bishop')
+    'openbmc/openbmc': ('bradbishop','Brad Bishop'),
+    'openbmc/phosphor-host-ipmid': ('tomjoseph83','Tom Joseph')
 }
 
 def map_username(user):
@@ -242,7 +239,6 @@ send_to_slack = ['@andrewg',
                 '@arj',
                 '@bradleyb',
                 '@cbostic',
-                '@chinari', 
                 '@devenrao', 
                 '@dkodihal',              
                 '@dhruvaraj', 
@@ -250,16 +246,14 @@ send_to_slack = ['@andrewg',
                 '@gmills', 
                 '@jms',
                 '@jk',
-                '@khansa',               
-                '@lgonzalez',  
                 '@msbarth',
                 '@mtritz',
+                '@navrathi',
                 '@ngorugan',
                 '@ojayanth',
                 '@ratagupt',
                 '@spinler',
                 '@tomjoseph',
-                '@vishwanath',
                 '@v2cib530']
 
 def do_report(args):
@@ -313,7 +307,11 @@ def do_report(args):
         print total_actions_message
         
         if option_ssm and slack_name in send_to_slack:
-            slack.chat.post_message(slack_name, total_actions_message)
+            try:
+                slack.chat.post_message(slack_name, total_actions_message)
+            except Exception as e:
+                print slack_name + "hit exception:",
+                print e
 
         review_count = 0
         for description in action_description:
@@ -324,7 +322,12 @@ def do_report(args):
 
             if option_ssm and slack_name in send_to_slack:
 #                print description
-                slack.chat.post_message(slack_name, description)
+                try:
+                    slack.chat.post_message(slack_name, description)
+                except Exception as e:
+                    print slack_name + "hit exception:",
+                    print e
+
         print "Number of Reviews: %d" % review_count
 
         if slack_name in oldest_action:
@@ -362,8 +365,11 @@ def do_report(args):
 
     print message
     if option_stat:
-        print "sending stats to openbmcdev channel"
-        slack.chat.post_message('#openbmcdev',message)
+        print "sending stats to sprint_review_week channel"
+        slack.chat.post_message('#sprint_review_week',message)
+
+#        print "sending stats to openbmcdev channel"
+#        slack.chat.post_message('#openbmcdev',message)
     
 
 parser = argparse.ArgumentParser()
